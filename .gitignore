@@ -1,0 +1,8 @@
+build/
+DerivedData/
+*.ipa
+Calculator-TrollStore/
+*-TrollStore.zip
+*.xcarchive
+*.xcodeproj
+*.DS_Store
