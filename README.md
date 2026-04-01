@@ -1,4 +1,4 @@
-# Personal Toolbox for TrollStore
+# AI Cleaner Advisor for TrollStore
 
 This repository is a minimal SwiftUI iOS app that can be edited on Windows and built on GitHub Actions.
 
@@ -11,7 +11,9 @@ That matters because `xcodebuild` works against an Xcode project or scheme, and 
 ## Files
 
 - `Calculator/CalculatorApp.swift`: SwiftUI app entry point
-- `Calculator/ContentView.swift`: personal toolbox UI and logic
+- `Calculator/ContentView.swift`: cleaner advisor UI
+- `Calculator/CleanerCore.swift`: scan models and risk definitions
+- `Calculator/CleanerViewModel.swift`: scan, classify, and safe cleanup logic
 - `project.yml`: XcodeGen spec used to generate `Calculator.xcodeproj`
 - `scripts/package-ipa.sh`: builds the app for `iphoneos` and packages an IPA
 - `.github/workflows/build.yml`: manual GitHub Actions workflow
@@ -29,5 +31,6 @@ That matters because `xcodebuild` works against an Xcode project or scheme, and 
 ## Notes
 
 - This is for personal testing with TrollStore, not App Store distribution.
-- If you later want camera, files, network, or location features, the project can be extended from here.
+- The current version uses local heuristics to classify directories into safe, review, protected, and inaccessible buckets.
+- Only green-safe items can be cleaned automatically. Review and protected items are explanation-only on purpose.
 - If the GitHub macOS image changes and a build breaks, pinning the runner or Xcode version is the first thing to check.

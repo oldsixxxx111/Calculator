@@ -1,17 +1,4 @@
 import SwiftUI
-import UIKit
-
-private struct SnippetItem: Identifiable, Codable, Equatable {
-    let id: UUID
-    var title: String
-    var content: String
-
-    init(id: UUID = UUID(), title: String, content: String) {
-        self.id = id
-        self.title = title
-        self.content = content
-    }
-}
 
 private struct ToolCard<Content: View>: View {
     let title: String
@@ -25,7 +12,7 @@ private struct ToolCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.system(size: 22, weight: .bold, design: .rounded))
@@ -34,7 +21,8 @@ private struct ToolCard<Content: View>: View {
                 if let subtitle = subtitle {
                     Text(subtitle)
                         .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.68))
+                        .foregroundColor(Color.white.opacity(0.70))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -53,112 +41,121 @@ private struct ToolCard<Content: View>: View {
     }
 }
 
-private struct SnippetComposer: View {
-    @Binding var title: String
-    @Binding var content: String
-    let onSave: () -> Void
-
-    private var canSave: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
+private struct SummaryChip: View {
+    let title: String
+    let value: String
+    let color: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TextField("标题，例如：收货备注", text: $title)
-                .textFieldStyle(PlainTextFieldStyle())
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.black.opacity(0.18))
-                )
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.55))
+
+            Text(value)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
-
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color.black.opacity(0.18))
-
-                if content.isEmpty {
-                    Text("内容，例如：您好，放门口即可，谢谢。")
-                        .font(.system(size: 15, weight: .regular, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.35))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                }
-
-                TextEditor(text: $content)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .frame(minHeight: 120)
-                    .foregroundColor(.white)
-                    .background(Color.clear)
-            }
-            .frame(minHeight: 120)
-
-            Button(action: onSave) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("保存到快贴")
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(canSave ? Color(red: 0.94, green: 0.61, blue: 0.18) : Color.white.opacity(0.10))
-                .foregroundColor(canSave ? .black : Color.white.opacity(0.45))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
-            .disabled(!canSave)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(color.opacity(0.18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(color.opacity(0.30), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
-private struct SnippetRow: View {
-    let item: SnippetItem
-    let onCopy: () -> Void
-    let onDelete: () -> Void
+private struct RiskBadge: View {
+    let risk: CleanupRisk
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: risk.iconName)
+            Text(risk.shortLabel)
+        }
+        .font(.system(size: 12, weight: .bold, design: .rounded))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(risk.color.opacity(0.16))
+        .foregroundColor(risk.color)
+        .clipShape(Capsule())
+    }
+}
+
+private struct ResultRow: View {
+    let result: ScanResult
+    let formatter: ByteCountFormatter
+    let dateFormatter: DateFormatter
+    let onClean: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(item.title)
+                    Text(result.title)
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
 
-                    Text(item.content)
-                        .font(.system(size: 15, weight: .regular, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.80))
+                    Text(result.purpose)
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.78))
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)
+                RiskBadge(risk: result.risk)
             }
 
-            HStack(spacing: 10) {
-                Button(action: onCopy) {
-                    HStack {
-                        Image(systemName: "doc.on.doc")
-                        Text("复制")
-                    }
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Color(red: 0.26, green: 0.73, blue: 0.61))
-                    .foregroundColor(.black)
-                    .clipShape(Capsule())
-                }
+            statLine(title: "路径", value: result.path)
+            statLine(title: "大小", value: formatter.string(fromByteCount: result.sizeBytes))
+            statLine(title: "文件数", value: "\(result.fileCount)")
 
-                Button(action: onDelete) {
-                    HStack {
-                        Image(systemName: "trash")
-                        Text("删除")
+            if let newestDate = result.newestDate {
+                statLine(title: "最近修改", value: dateFormatter.string(from: newestDate))
+            }
+
+            if result.isPartial {
+                statLine(title: "扫描状态", value: "只统计了部分文件，目录太大。")
+            }
+
+            Text(result.insight)
+                .font(.system(size: 14, weight: .regular, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.90))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("删除影响：\(result.cleanupImpact)")
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(result.risk.color)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let errorMessage = result.errorMessage {
+                Text(errorMessage)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.55))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !result.sampleChildren.isEmpty {
+                Text("样本：\(result.sampleChildren.joined(separator: " · "))")
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundColor(Color.white.opacity(0.52))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if result.canClean {
+                Button(action: onClean) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "trash.fill")
+                        Text("清理这一项")
                     }
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(Color.white.opacity(0.10))
-                    .foregroundColor(.white)
+                    .background(result.risk.color)
+                    .foregroundColor(.black)
                     .clipShape(Capsule())
                 }
             }
@@ -169,369 +166,254 @@ private struct SnippetRow: View {
                 .fill(Color.black.opacity(0.18))
         )
     }
+
+    private func statLine(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.50))
+
+            Text(value)
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
 }
 
 struct ContentView: View {
-    @State private var snippets = ContentView.defaultSnippets
-    @State private var draftTitle = ""
-    @State private var draftContent = ""
-    @State private var selectedDate = Date()
-    @State private var unixInput = ""
-    @State private var parseError = ""
-    @State private var currentTime = Date()
-    @State private var feedbackMessage = ""
-    @State private var feedbackToken = UUID()
-    @State private var didLoadStoredSnippets = false
+    @StateObject private var model = CleanerViewModel()
 
-    private static let snippetStorageKey = "toolbox.savedSnippets"
-    private static let defaultSnippets = [
-        SnippetItem(title: "收货备注", content: "您好，放门口即可，谢谢。"),
-        SnippetItem(title: "常用地址", content: "上海市浦东新区世纪大道 100 号 8 楼"),
-        SnippetItem(title: "测试账号", content: "账号：demo@example.com\n密码：12345678")
-    ]
+    private let byteFormatter: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        formatter.includesUnit = true
+        formatter.isAdaptive = true
+        return formatter
+    }()
 
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter
+    }()
 
     var body: some View {
         ZStack(alignment: .top) {
             LinearGradient(
                 colors: [
-                    Color(red: 0.07, green: 0.10, blue: 0.20),
-                    Color(red: 0.05, green: 0.08, blue: 0.12),
-                    Color(red: 0.11, green: 0.16, blue: 0.14)
+                    Color(red: 0.07, green: 0.08, blue: 0.16),
+                    Color(red: 0.08, green: 0.13, blue: 0.12),
+                    Color(red: 0.14, green: 0.11, blue: 0.08)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
 
-            TabView {
-                snippetsTab
-                    .tabItem {
-                        Image(systemName: "doc.on.clipboard")
-                        Text("快贴")
-                    }
+            NavigationView {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        headerCard
+                        summaryCard
+                        analyzeCard
 
-                timestampsTab
-                    .tabItem {
-                        Image(systemName: "clock.arrow.circlepath")
-                        Text("时间")
+                        ForEach(CleanupRisk.allCases, id: \.self) { risk in
+                            let filtered = model.results.filter { $0.risk == risk }
+                            if !filtered.isEmpty {
+                                ToolCard(title: risk.title, subtitle: risk.guidance) {
+                                    VStack(spacing: 12) {
+                                        ForEach(filtered) { result in
+                                            ResultRow(
+                                                result: result,
+                                                formatter: byteFormatter,
+                                                dateFormatter: dateFormatter,
+                                                onClean: { model.clean(result) }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        principleCard
                     }
+                    .padding(16)
+                    .padding(.bottom, 32)
+                }
+                .background(Color.clear)
+                .navigationBarTitle("清理顾问", displayMode: .large)
             }
-            .accentColor(Color(red: 0.94, green: 0.61, blue: 0.18))
+            .navigationViewStyle(StackNavigationViewStyle())
 
-            if !feedbackMessage.isEmpty {
-                Text(feedbackMessage)
+            if !model.bannerMessage.isEmpty {
+                Text(model.bannerMessage)
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Color.black.opacity(0.75))
+                    .background(Color.black.opacity(0.78))
                     .foregroundColor(.white)
                     .clipShape(Capsule())
                     .padding(.top, 12)
-                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .onAppear {
-            loadSnippetsIfNeeded()
-        }
-        .onChange(of: snippets) { newValue in
-            guard didLoadStoredSnippets else { return }
-            saveSnippets(newValue)
-        }
-        .onReceive(timer) { date in
-            currentTime = date
-        }
-    }
-
-    private var snippetsTab: some View {
-        NavigationView {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    ToolCard(
-                        title: "文本快贴",
-                        subtitle: "把常用回复、地址、账号、备注收进一个地方，点一下直接复制。"
-                    ) {
-                        Text("这一页的数据保存在本机，下次打开还在。适合收货备注、测试账号、常用命令、短信模板。")
-                            .font(.system(size: 15, weight: .regular, design: .rounded))
-                            .foregroundColor(Color.white.opacity(0.82))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    ToolCard(title: "新增快贴", subtitle: "先做轻量版本，支持新增、删除和一键复制。") {
-                        SnippetComposer(
-                            title: $draftTitle,
-                            content: $draftContent,
-                            onSave: addSnippet
-                        )
-                    }
-
-                    ToolCard(
-                        title: "已保存内容",
-                        subtitle: snippets.isEmpty ? "还没有内容，先添加一条。" : "共 \(snippets.count) 条，点击即可复制。"
-                    ) {
-                        if snippets.isEmpty {
-                            Text("没有保存的快贴。")
-                                .font(.system(size: 15, weight: .medium, design: .rounded))
-                                .foregroundColor(Color.white.opacity(0.70))
-                        } else {
-                            VStack(spacing: 12) {
-                                ForEach(snippets) { item in
-                                    SnippetRow(
-                                        item: item,
-                                        onCopy: { copySnippet(item) },
-                                        onDelete: { deleteSnippet(item) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(16)
-                .padding(.bottom, 32)
+            if model.results.isEmpty {
+                model.scan()
             }
-            .background(Color.clear)
-            .navigationBarTitle("小工具箱", displayMode: .large)
         }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
 
-    private var timestampsTab: some View {
-        NavigationView {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    ToolCard(
-                        title: "当前时间",
-                        subtitle: "本地时间每秒更新，常用值直接复制。"
-                    ) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            timestampLine(title: "本地时间", value: fullDateFormatter.string(from: currentTime))
-                            timestampLine(title: "Unix 秒", value: unixSecondsString(from: currentTime))
-                            timestampLine(title: "Unix 毫秒", value: unixMillisecondsString(from: currentTime))
-                            timestampLine(title: "ISO 8601", value: isoFormatter.string(from: currentTime))
+    private var headerCard: some View {
+        ToolCard(title: "AI 辅助清理顾问", subtitle: "本地扫描目录结构，先做风险分级，再给出删除建议。第一版只允许清理绿色安全项。") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("这不是盲删工具。它会把缓存、日志、临时文件和关键数据分开看，并把访问不到的目录单独标出来。")
+                    .font(.system(size: 15, weight: .regular, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.82))
+                    .fixedSize(horizontal: false, vertical: true)
 
-                            HStack(spacing: 10) {
-                                actionChip(title: "复制秒", systemImage: "doc.on.doc") {
-                                    copy(text: unixSecondsString(from: currentTime), label: "已复制 Unix 秒")
-                                }
+                HStack(spacing: 10) {
+                    actionButton(
+                        title: model.isScanning ? "扫描中..." : "开始扫描",
+                        systemImage: "magnifyingglass.circle.fill",
+                        filled: true,
+                        enabled: !model.isScanning && !model.isCleaning,
+                        action: { model.scan() }
+                    )
 
-                                actionChip(title: "复制毫秒", systemImage: "doc.on.doc.fill") {
-                                    copy(text: unixMillisecondsString(from: currentTime), label: "已复制 Unix 毫秒")
-                                }
-                            }
-                        }
-                    }
+                    actionButton(
+                        title: model.isCleaning ? "清理中..." : "清理安全项",
+                        systemImage: "trash.fill",
+                        filled: false,
+                        enabled: !model.isScanning && !model.isCleaning,
+                        action: { model.cleanRecommended() }
+                    )
+                }
 
-                    ToolCard(
-                        title: "日期转时间戳",
-                        subtitle: "选一个时间，下面直接给你秒级和毫秒级。"
-                    ) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            DatePicker(
-                                "选择时间",
-                                selection: $selectedDate,
-                                displayedComponents: [.date, .hourAndMinute]
-                            )
-                            .datePickerStyle(CompactDatePickerStyle())
-                            .labelsHidden()
-                            .padding(.vertical, 4)
+                if let lastScanDate = model.lastScanDate {
+                    Text("上次扫描：\(dateFormatter.string(from: lastScanDate))")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.55))
+                }
+            }
+        }
+    }
 
-                            timestampLine(title: "格式化时间", value: fullDateFormatter.string(from: selectedDate))
-                            timestampLine(title: "Unix 秒", value: unixSecondsString(from: selectedDate))
-                            timestampLine(title: "Unix 毫秒", value: unixMillisecondsString(from: selectedDate))
+    private var summaryCard: some View {
+        ToolCard(title: "扫描摘要", subtitle: "把空间、风险和权限问题先压成四个数字。") {
+            VStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    SummaryChip(title: "总占用", value: byteFormatter.string(fromByteCount: model.summary.totalBytes), color: Color(red: 0.36, green: 0.58, blue: 0.98))
+                    SummaryChip(title: "可安全清理", value: byteFormatter.string(fromByteCount: model.summary.safeBytes), color: CleanupRisk.safe.color)
+                }
 
-                            HStack(spacing: 10) {
-                                actionChip(title: "复制格式化时间", systemImage: "calendar") {
-                                    copy(text: fullDateFormatter.string(from: selectedDate), label: "已复制日期字符串")
-                                }
+                HStack(spacing: 10) {
+                    SummaryChip(title: "需人工确认", value: byteFormatter.string(fromByteCount: model.summary.reviewBytes), color: CleanupRisk.review.color)
+                    SummaryChip(title: "访问受限", value: "\(model.summary.inaccessibleCount) 项", color: CleanupRisk.inaccessible.color)
+                }
+            }
+        }
+    }
 
-                                actionChip(title: "复制秒时间戳", systemImage: "clock") {
-                                    copy(text: unixSecondsString(from: selectedDate), label: "已复制时间戳")
-                                }
-                            }
-                        }
-                    }
+    private var analyzeCard: some View {
+        ToolCard(title: "路径智能判读", subtitle: "把你看不懂的路径贴进来，我会按目录名和样本文件名给出用途、风险和删除影响。") {
+            VStack(alignment: .leading, spacing: 12) {
+                TextField("例如：/var/mobile/Library/Caches/com.tencent.xin", text: $model.customPath)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.black.opacity(0.18))
+                    )
+                    .foregroundColor(.white)
 
-                    ToolCard(
-                        title: "时间戳转日期",
-                        subtitle: "支持秒和毫秒。输入 10 位或 13 位都行。"
-                    ) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            TextField("输入时间戳", text: $unixInput)
-                                .keyboardType(.numbersAndPunctuation)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color.black.opacity(0.18))
-                                )
+                actionButton(title: "生成判读", systemImage: "brain.head.profile", filled: false, enabled: true, action: {
+                    model.analyzeCustomPath()
+                })
+
+                if let insight = model.customInsight {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(insight.title)
+                                .font(.system(size: 17, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
 
-                            HStack(spacing: 10) {
-                                actionChip(title: "解析", systemImage: "arrow.clockwise.circle") {
-                                    parseUnixInput()
-                                }
+                            Spacer()
+                            RiskBadge(risk: insight.risk)
+                        }
 
-                                actionChip(title: "填入当前秒", systemImage: "clock.badge.checkmark") {
-                                    unixInput = unixSecondsString(from: currentTime)
-                                    parseUnixInput()
-                                }
-                            }
+                        Text(insight.explanation)
+                            .font(.system(size: 14, weight: .regular, design: .rounded))
+                            .foregroundColor(Color.white.opacity(0.88))
+                            .fixedSize(horizontal: false, vertical: true)
 
-                            if !parseError.isEmpty {
-                                Text(parseError)
-                                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                                    .foregroundColor(Color(red: 1.0, green: 0.62, blue: 0.62))
-                            }
+                        Text("删除影响：\(insight.cleanupImpact)")
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundColor(insight.risk.color)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text("置信度：\(insight.confidence)%")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(Color.white.opacity(0.55))
+
+                        if !insight.sampleChildren.isEmpty {
+                            Text("样本：\(insight.sampleChildren.joined(separator: " · "))")
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundColor(Color.white.opacity(0.52))
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    .padding(14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.black.opacity(0.18))
+                    )
                 }
-                .padding(16)
-                .padding(.bottom, 32)
             }
-            .background(Color.clear)
-            .navigationBarTitle("时间戳工具", displayMode: .large)
-        }
-        .navigationViewStyle(StackNavigationViewStyle())
-    }
-
-    private func timestampLine(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundColor(Color.white.opacity(0.55))
-
-            Text(value)
-                .font(.system(size: 16, weight: .medium, design: .monospaced))
-                .foregroundColor(.white)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private func actionChip(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+    private var principleCard: some View {
+        ToolCard(title: "清理原则", subtitle: "真正有用的不是自动删，而是先看懂目录。") {
+            VStack(alignment: .leading, spacing: 10) {
+                principleLine("绿色目录允许直接清理，但当前版本只删除目录内容，不删目录本身。")
+                principleLine("黄色目录只给建议，不自动删，避免把离线资源和下载内容误删。")
+                principleLine("红色目录默认按数据库、配置、聊天记录和用户文件处理。")
+                principleLine("灰色目录表示访问不到，通常是权限不够、路径不存在，或需要更高权限。")
+            }
+        }
+    }
+
+    private func actionButton(title: String, systemImage: String, filled: Bool, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: systemImage)
                 Text(title)
             }
-            .font(.system(size: 13, weight: .semibold, design: .rounded))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color.white.opacity(0.10))
-            .foregroundColor(.white)
-            .clipShape(Capsule())
+            .font(.system(size: 14, weight: .bold, design: .rounded))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(filled ? (enabled ? Color(red: 0.96, green: 0.68, blue: 0.24) : Color.white.opacity(0.10)) : Color.white.opacity(enabled ? 0.10 : 0.06))
+            .foregroundColor(filled ? (enabled ? .black : Color.white.opacity(0.45)) : (enabled ? .white : Color.white.opacity(0.40)))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
+        .disabled(!enabled)
     }
 
-    private func addSnippet() {
-        let trimmedTitle = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedContent = draftContent.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func principleLine(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(Color.white.opacity(0.70))
+                .frame(width: 6, height: 6)
+                .padding(.top, 6)
 
-        guard !trimmedTitle.isEmpty, !trimmedContent.isEmpty else { return }
-
-        snippets.insert(SnippetItem(title: trimmedTitle, content: trimmedContent), at: 0)
-        draftTitle = ""
-        draftContent = ""
-        copy(text: trimmedContent, label: "已保存并复制")
-    }
-
-    private func copySnippet(_ item: SnippetItem) {
-        copy(text: item.content, label: "已复制 \(item.title)")
-    }
-
-    private func deleteSnippet(_ item: SnippetItem) {
-        snippets.removeAll { $0.id == item.id }
-        showFeedback("已删除 \(item.title)")
-    }
-
-    private func copy(text: String, label: String) {
-        UIPasteboard.general.string = text
-        showFeedback(label)
-    }
-
-    private func showFeedback(_ message: String) {
-        let token = UUID()
-        feedbackToken = token
-
-        withAnimation(.easeInOut(duration: 0.18)) {
-            feedbackMessage = message
+            Text(text)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.82))
+                .fixedSize(horizontal: false, vertical: true)
         }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            guard feedbackToken == token else { return }
-
-            withAnimation(.easeInOut(duration: 0.18)) {
-                feedbackMessage = ""
-            }
-        }
-    }
-
-    private func parseUnixInput() {
-        let trimmed = unixInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            parseError = "先输入一个时间戳。"
-            return
-        }
-
-        let normalized = trimmed.replacingOccurrences(of: ",", with: "")
-        guard let rawValue = Double(normalized) else {
-            parseError = "只能输入数字，支持秒或毫秒。"
-            return
-        }
-
-        let secondsValue: Double
-        if normalized.count >= 13 {
-            secondsValue = rawValue / 1000
-        } else {
-            secondsValue = rawValue
-        }
-
-        let parsedDate = Date(timeIntervalSince1970: secondsValue)
-        selectedDate = parsedDate
-        parseError = ""
-        copy(text: fullDateFormatter.string(from: parsedDate), label: "已解析并复制日期")
-    }
-
-    private func loadSnippetsIfNeeded() {
-        guard !didLoadStoredSnippets else { return }
-        didLoadStoredSnippets = true
-
-        guard
-            let data = UserDefaults.standard.data(forKey: Self.snippetStorageKey),
-            let storedItems = try? JSONDecoder().decode([SnippetItem].self, from: data),
-            !storedItems.isEmpty
-        else {
-            saveSnippets(snippets)
-            return
-        }
-
-        snippets = storedItems
-    }
-
-    private func saveSnippets(_ items: [SnippetItem]) {
-        guard let data = try? JSONEncoder().encode(items) else { return }
-        UserDefaults.standard.set(data, forKey: Self.snippetStorageKey)
-    }
-
-    private func unixSecondsString(from date: Date) -> String {
-        String(Int(date.timeIntervalSince1970))
-    }
-
-    private func unixMillisecondsString(from date: Date) -> String {
-        String(Int(date.timeIntervalSince1970 * 1000))
-    }
-
-    private var fullDateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return formatter
-    }
-
-    private var isoFormatter: ISO8601DateFormatter {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
     }
 }

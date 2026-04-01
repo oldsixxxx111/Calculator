@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct ToolboxApp: App {
+struct CleanerAdvisorApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
